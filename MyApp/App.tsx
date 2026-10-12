@@ -1,263 +1,138 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  RefreshControl,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
-import { PROVINCES } from './src/data/provinces';
-import { Province, WeatherData } from './src/types/weather';
-import { fetchWeatherData, getWeatherCodeInfo } from './src/services/weatherApi';
-import { THEMES, WeatherTheme } from './src/styles/theme';
-import { WeatherHeader } from './src/components/WeatherHeader';
-import { PopularQuickBar } from './src/components/PopularQuickBar';
-import { CurrentWeatherCard } from './src/components/CurrentWeatherCard';
-import { WeatherMetricsGrid } from './src/components/WeatherMetricsGrid';
-import { HourlyForecast } from './src/components/HourlyForecast';
-import { DailyForecast } from './src/components/DailyForecast';
-import { ProvincePickerModal } from './src/components/ProvincePickerModal';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <MainWeatherApp />
-    </SafeAreaProvider>
-  );
-}
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Hồ sơ</Text>
+      </View>
 
-function MainWeatherApp() {
-  const insets = useSafeAreaInsets();
-  const [selectedProvince, setSelectedProvince] = useState<Province>(PROVINCES[0]); // Hanoi default
-  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isPickerVisible, setIsPickerVisible] = useState<boolean>(false);
-
-  // Load weather for selected province
-  const loadWeather = useCallback(async (prov: Province, showFullLoader = true) => {
-    if (showFullLoader) setIsLoading(true);
-    setErrorMessage(null);
-
-    try {
-      const data = await fetchWeatherData(prov);
-      setWeatherData(data);
-    } catch (err: any) {
-      setErrorMessage(
-        err?.message || 'Không thể tải dữ liệu thời tiết. Vui lòng thử lại.',
-      );
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadWeather(selectedProvince, true);
-  }, [selectedProvince, loadWeather]);
-
-  const onRefresh = useCallback(() => {
-    setIsRefreshing(true);
-    loadWeather(selectedProvince, false);
-  }, [selectedProvince, loadWeather]);
-
-  // Determine current theme
-  let theme: WeatherTheme = THEMES.sunny;
-  if (weatherData?.current) {
-    const codeInfo = getWeatherCodeInfo(
-      weatherData.current.weatherCode,
-      weatherData.current.isDay,
-    );
-    theme = THEMES[codeInfo.theme] || THEMES.sunny;
-  }
-
-  return (
-    <View
-      style={[
-        styles.screen,
-        {
-          backgroundColor: theme.primaryBg,
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom,
-        },
-      ]}
-    >
-      <StatusBar barStyle="light-content" />
-
-      {/* App Bar / Top Navigation */}
-      <WeatherHeader
-        province={selectedProvince}
-        lastUpdated={weatherData?.lastUpdated || ''}
-        theme={theme}
-        isLoading={isLoading}
-        onOpenPicker={() => setIsPickerVisible(true)}
-        onRefresh={onRefresh}
-      />
-
-      {/* Quick Select Popular Cities */}
-      <PopularQuickBar
-        currentProvince={selectedProvince}
-        theme={theme}
-        onSelectProvince={(prov) => setSelectedProvince(prov)}
-      />
-
-      {/* Main Body */}
-      {isLoading && !weatherData ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-            Đang kết nối vệ tinh Open-Meteo...
-          </Text>
-          <Text style={[styles.loadingSubText, { color: theme.textMuted }]}>
-            {selectedProvince.name}
-          </Text>
+      {/* Thẻ thông tin: avatar tròn bên trái, tên + ngành bên phải */}
+      <View style={styles.card}>
+        <View style={styles.avatar} />
+        <View style={styles.info}>
+          <Text style={styles.name}>Lê Minh Châu</Text>
+          <Text style={styles.major}>Sinh viên CNTT</Text>
         </View>
-      ) : errorMessage && !weatherData ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>⚠️</Text>
-          <Text style={[styles.errorTitle, { color: theme.textPrimary }]}>
-            Lỗi nạp dữ liệu thời tiết
-          </Text>
-          <Text style={[styles.errorDesc, { color: theme.textMuted }]}>
-            {errorMessage}
-          </Text>
-          <TouchableOpacity
-            style={[styles.retryBtn, { backgroundColor: theme.accent }]}
-            onPress={() => loadWeather(selectedProvince, true)}
-          >
-            <Text style={styles.retryBtnText}>Thử lại ngay</Text>
-          </TouchableOpacity>
+      </View>
+
+      {/* Hàng thống kê 3 cột chia đều */}
+      <View style={styles.statsRow}>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>12</Text>
+          <Text style={styles.statLabel}>Môn</Text>
         </View>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor={theme.accent}
-              colors={[theme.accent]}
-            />
-          }
-        >
-          {weatherData && (
-            <>
-              {/* Primary Current Weather Display */}
-              <CurrentWeatherCard
-                current={weatherData.current}
-                todayForecast={weatherData.daily[0]}
-                theme={theme}
-              />
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>3.6</Text>
+          <Text style={styles.statLabel}>GPA</Text>
+        </View>
+        <View style={styles.statItem}>
+          <Text style={styles.statNumber}>120</Text>
+          <Text style={styles.statLabel}>Tín chỉ</Text>
+        </View>
+      </View>
 
-              {/* 24-Hour Forecast Scroll */}
-              <HourlyForecast hourly={weatherData.hourly} theme={theme} />
-
-              {/* Real-time Balanced Metrics Grid (Gió, Độ ẩm, UV, Mưa, Khí áp, Mây) */}
-              <WeatherMetricsGrid current={weatherData.current} theme={theme} />
-
-              {/* 7-Day Forecast */}
-              <DailyForecast daily={weatherData.daily} theme={theme} />
-
-              {/* Footer & Source Attribution */}
-              <View style={styles.footer}>
-                <Text style={[styles.footerText, { color: theme.textMuted }]}>
-                  Dữ liệu khí tượng vệ tinh thời gian thực bởi Open-Meteo WMO
-                </Text>
-                <Text style={[styles.footerSub, { color: theme.textMuted }]}>
-                  Hỗ trợ 40 tỉnh thành Việt Nam • Độ chính xác cao
-                </Text>
-              </View>
-            </>
-          )}
-        </ScrollView>
-      )}
-
-      {/* Province Picker Modal */}
-      <ProvincePickerModal
-        visible={isPickerVisible}
-        currentProvince={selectedProvince}
-        theme={theme}
-        onSelectProvince={(prov) => setSelectedProvince(prov)}
-        onClose={() => setIsPickerVisible(false)}
-      />
+      {/* Danh sách 4 dòng bên dưới chiếm phần còn lại */}
+      <View style={styles.list}>
+        <View style={styles.listItem}>
+          <Text style={styles.itemText}>Thông tin cá nhân</Text>
+        </View>
+        <View style={styles.listItem}>
+          <Text style={styles.itemText}>Lịch học</Text>
+        </View>
+        <View style={styles.listItem}>
+          <Text style={styles.itemText}>Bảng điểm</Text>
+        </View>
+        <View style={styles.listItem}>
+          <Text style={styles.itemText}>Cài đặt</Text>
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
-  scrollContent: {
-    paddingBottom: 24,
-  },
-  loadingContainer: {
-    flex: 1,
+  header: {
+    backgroundColor: '#D32F2F',
+    paddingTop: 40,
+    paddingBottom: 16,
     alignItems: 'center',
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  // Thẻ thông tin: avatar tròn bên trái, tên + ngành bên phải
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    margin: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#D32F2F',
+    marginRight: 16,
+  },
+  info: {
     justifyContent: 'center',
-    padding: 24,
   },
-  loadingText: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginTop: 16,
+  name: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  loadingSubText: {
+  major: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 4,
+  },
+  // Hàng thống kê 3 cột chia đều
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 16,
+    marginHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statLabel: {
     fontSize: 13,
-    marginTop: 6,
+    color: '#666',
+    marginTop: 4,
   },
-  errorContainer: {
+  // Danh sách 4 dòng bên dưới chiếm phần còn lại
+  list: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    padding: 16,
   },
-  errorIcon: {
-    fontSize: 48,
+  listItem: {
+    backgroundColor: '#F5F5F5',
+    padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
   },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 8,
-  },
-  errorDesc: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  retryBtn: {
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
-  },
-  retryBtnText: {
-    color: '#000000',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  footer: {
-    marginTop: 24,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    gap: 4,
-  },
-  footerText: {
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  footerSub: {
-    fontSize: 10,
-    textAlign: 'center',
+  itemText: {
+    fontSize: 15,
+    color: '#333',
   },
 });
