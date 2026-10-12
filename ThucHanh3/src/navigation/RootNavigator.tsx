@@ -1,27 +1,32 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../types/navigation';
-import { DrawerNavigator } from './DrawerNavigator';
-import { StudentDetailScreen } from '../screens/StudentDetailScreen';
-import { EditStudentScreen } from '../screens/EditStudentScreen';
-import { AddStudentScreen } from '../screens/AddStudentScreen';
+import { RootStackParamList } from '../types';
+import { BottomTabNavigator } from './BottomTabNavigator';
+import { SubjectDetailScreen } from '../screens/SubjectDetailScreen';
+import { ScheduleDetailScreen } from '../screens/ScheduleDetailScreen';
+import { AssignmentDetailScreen } from '../screens/AssignmentDetailScreen';
+import { AcademicResultDetailScreen } from '../screens/AcademicResultDetailScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
   return (
     <Stack.Navigator
-      initialRouteName="DrawerRoot"
+      initialRouteName="MainTabs"
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: '#F8FAFC' },
+        contentStyle: { backgroundColor: '#FAFAFA' },
       }}
     >
-      <Stack.Screen name="DrawerRoot" component={DrawerNavigator} />
-      <Stack.Screen name="StudentDetail" component={StudentDetailScreen} />
-      <Stack.Screen name="EditStudent" component={EditStudentScreen} />
-      <Stack.Screen name="AddStudent" component={AddStudentScreen} />
+      <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+      <Stack.Screen name="SubjectDetail" component={SubjectDetailScreen} />
+      <Stack.Screen name="ScheduleDetail" component={ScheduleDetailScreen} />
+      <Stack.Screen name="AssignmentDetail" component={AssignmentDetailScreen} />
+      <Stack.Screen
+        name="AcademicResultDetail"
+        component={AcademicResultDetailScreen}
+      />
     </Stack.Navigator>
   );
 };

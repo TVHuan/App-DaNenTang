@@ -22,6 +22,7 @@
 @rem
 
 @if "%DEBUG%"=="" @echo off
+if "%GRADLE_USER_HOME%"=="" set GRADLE_USER_HOME=E:\.gradle
 @rem ##########################################################################
 @rem
 @rem  Gradle startup script for Windows
