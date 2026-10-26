@@ -18,6 +18,7 @@ export interface AppDataContextType {
   assignments: Assignment[];
   grades: Grade[];
   loading: boolean;
+  error: string | null;
   lastUpdated: string | null;
   reloadAll: () => Promise<void>;
   toggleAssignmentStatus: (id: number | string) => Promise<void>;
@@ -43,12 +44,16 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   /**
    * Tải toàn bộ dữ liệu (ưu tiên đọc cache trước, sau đó gọi API nếu online)
    */
   const reloadAll = useCallback(async () => {
+    let hasLocalData = false;
+    setLoading(true);
+
     // 1. Tải cache
     try {
       const [cStudent, cCourses, cSessions, cAssignments, cGrades] = await Promise.all([
@@ -59,8 +64,8 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
         getCache<Grade[]>(STORAGE_KEYS.CACHE_GRADES),
       ]);
 
-      if (cStudent?.data) setStudent(cStudent.data);
-      if (cCourses?.data) setCourses(cCourses.data);
+      if (cStudent?.data) { setStudent(cStudent.data); hasLocalData = true; }
+      if (cCourses?.data) { setCourses(cCourses.data); hasLocalData = true; }
       if (cSessions?.data) setSessions(cSessions.data);
       if (cAssignments?.data) setAssignments(cAssignments.data);
       if (cGrades?.data) setGrades(cGrades.data);
@@ -86,11 +91,11 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (isOnline) {
       try {
         const [rStudent, rCourses, rSessions, rAssignments, rGrades] = await Promise.all([
-          studentService.getById(1).catch(() => null),
-          courseService.getAll().catch(() => null),
-          sessionService.getAll().catch(() => null),
-          assignmentService.getAll().catch(() => null),
-          gradeService.getAll().catch(() => null),
+          studentService.getById(1),
+          courseService.getAll(),
+          sessionService.getAll(),
+          assignmentService.getAll(),
+          gradeService.getAll(),
         ]);
 
         const now = new Date().toISOString();
@@ -117,8 +122,18 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
         }
 
         setLastUpdated(now);
+        setError(null);
       } catch (apiErr) {
         console.warn('[AppDataContext] Lỗi tải dữ liệu từ API:', apiErr);
+        if (!hasLocalData) {
+          setError('Không thể kết nối đến máy chủ json-server. Vui lòng bật máy chủ và bấm Thử lại.');
+        }
+      }
+    } else {
+      if (!hasLocalData) {
+        setError('Bạn đang offline và chưa có dữ liệu lưu trong bộ nhớ tạm.');
+      } else {
+        setError(null);
       }
     }
   }, [isOnline]);
@@ -138,30 +153,44 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
     const newStatus: AssignmentStatus = previousStatus === 'done' ? 'todo' : 'done';
     const nowIso = new Date().toISOString();
 
-    // Cập nhật ngay trên giao diện
-    const updatedAssignments = assignments.map((a) =>
-      String(a.id) === String(id)
-        ? { ...a, status: newStatus, updatedAt: nowIso, _pending: !isOnline }
-        : a
-    );
-    setAssignments(updatedAssignments);
-    await setCache(STORAGE_KEYS.CACHE_ASSIGNMENTS, updatedAssignments);
-
     if (isOnline) {
       try {
+        // Cập nhật lạc quan
+        const updatedAssignments = assignments.map((a) =>
+          String(a.id) === String(id)
+            ? { ...a, status: newStatus, updatedAt: nowIso, _pending: false }
+            : a
+        );
+        setAssignments(updatedAssignments);
+        await setCache(STORAGE_KEYS.CACHE_ASSIGNMENTS, updatedAssignments);
+
         await assignmentService.update(id, { status: newStatus });
       } catch (err) {
-        // Hoàn tác nếu API lỗi
-        console.warn('[toggleAssignmentStatus] Lỗi API, hoàn tác trạng thái:', err);
-        const rolledBack = assignments.map((a) =>
-          String(a.id) === String(id) ? { ...a, status: previousStatus } : a
+        console.warn('[toggleAssignmentStatus] Lỗi API, chuyển sang lưu Outbox:', err);
+        // Thay vì rollback làm gián đoạn trải nghiệm, đánh dấu pending và đưa vào Outbox
+        const pendingAssignments = assignments.map((a) =>
+          String(a.id) === String(id)
+            ? { ...a, status: newStatus, updatedAt: nowIso, _pending: true }
+            : a
         );
-        setAssignments(rolledBack);
-        await setCache(STORAGE_KEYS.CACHE_ASSIGNMENTS, rolledBack);
-        Alert.alert('Lỗi cập nhật', 'Không thể cập nhật trạng thái bài tập lên máy chủ.');
+        setAssignments(pendingAssignments);
+        await setCache(STORAGE_KEYS.CACHE_ASSIGNMENTS, pendingAssignments);
+        await enqueue({
+          method: 'PATCH',
+          url: `/assignments/${id}`,
+          body: { status: newStatus, updatedAt: nowIso },
+        });
       }
     } else {
-      // Offline -> Đưa vào hàng đợi Outbox
+      // Offline -> Cập nhật giao diện ngay với nhãn Chưa đồng bộ (_pending = true) và lưu vào Outbox
+      const updatedAssignments = assignments.map((a) =>
+        String(a.id) === String(id)
+          ? { ...a, status: newStatus, updatedAt: nowIso, _pending: true }
+          : a
+      );
+      setAssignments(updatedAssignments);
+      await setCache(STORAGE_KEYS.CACHE_ASSIGNMENTS, updatedAssignments);
+
       await enqueue({
         method: 'PATCH',
         url: `/assignments/${id}`,
@@ -201,7 +230,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
       }
     }
 
-    // Offline hoặc API lỗi: Tạo local item và đưa vào Outbox
+    // Offline hoặc API lỗi: Tạo local item có _pending: true và đưa vào Outbox
     const localId = `local_${Date.now()}`;
     const localItem: Assignment = {
       id: localId,
@@ -304,6 +333,7 @@ export const AppDataProvider: React.FC<{ children: ReactNode }> = ({ children })
         assignments,
         grades,
         loading,
+        error,
         lastUpdated,
         reloadAll,
         toggleAssignmentStatus,

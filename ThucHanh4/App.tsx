@@ -3,20 +3,27 @@ import { StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { AppDataProvider } from './src/context/AppDataContext';
+import { AppDataProvider, useAppData } from './src/context/AppDataContext';
 import { SyncProvider } from './src/context/SyncContext';
 import AppNavigator from './src/navigation/AppNavigator';
+
+function AppContent() {
+  const { reloadAll } = useAppData();
+  return (
+    <SyncProvider onSynced={reloadAll}>
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </SyncProvider>
+  );
+}
 
 export default function App(): React.JSX.Element {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar hidden={true} />
       <AppDataProvider>
-        <SyncProvider>
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-        </SyncProvider>
+        <AppContent />
       </AppDataProvider>
     </SafeAreaProvider>
   );

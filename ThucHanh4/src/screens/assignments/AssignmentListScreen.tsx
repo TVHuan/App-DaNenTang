@@ -15,6 +15,7 @@ import { ROUTES } from '../../navigation/routes';
 import { isOverdue } from '../../utils/date';
 import colors from '../../theme/colors';
 import spacing from '../../theme/spacing';
+import typography from '../../theme/typography';
 
 const FILTER_OPTIONS: FilterOption[] = [
   { label: 'Tất cả', value: 'ALL' },
@@ -66,6 +67,19 @@ export default function AssignmentListScreen() {
 
   return (
     <ScreenContainer>
+      <View style={styles.topBar}>
+        <Text style={styles.screenTitle}>Bài tập</Text>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate(ROUTES.ASSIGNMENT_FORM)}
+          accessibilityRole="button"
+          accessibilityLabel="Thêm bài tập mới"
+        >
+          <Plus size={18} color={colors.primary} />
+          <Text style={styles.addButtonText}>Thêm bài tập</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.headerSection}>
         <FilterChips
           options={FILTER_OPTIONS}
@@ -112,6 +126,18 @@ export default function AssignmentListScreen() {
 }
 
 const styles = StyleSheet.create({
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+  },
+  screenTitle: {
+    ...typography.h2,
+    color: colors.text,
+  },
   headerSection: {
     paddingTop: spacing.xs,
     paddingBottom: spacing.xs,

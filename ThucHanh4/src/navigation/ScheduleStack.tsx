@@ -22,7 +22,7 @@ export default function ScheduleStack() {
       <Stack.Screen
         name={ROUTES.SCHEDULE}
         component={ScheduleScreen}
-        options={{ title: 'Thời khóa biểu' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={ROUTES.SESSION_DETAIL}

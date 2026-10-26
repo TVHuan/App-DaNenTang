@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
@@ -13,7 +13,9 @@ import EmptyState from '../../components/common/EmptyState';
 import LastUpdatedText from '../../components/common/LastUpdatedText';
 import { useAppData } from '../../context/AppDataContext';
 import { ROUTES } from '../../navigation/routes';
+import colors from '../../theme/colors';
 import spacing from '../../theme/spacing';
+import typography from '../../theme/typography';
 
 export default function CourseListScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
@@ -53,6 +55,9 @@ export default function CourseListScreen() {
 
   return (
     <ScreenContainer>
+      <View style={styles.topBar}>
+        <Text style={styles.screenTitle}>Môn học</Text>
+      </View>
       <View style={styles.filterSection}>
         <SearchBar
           value={searchQuery}
@@ -109,6 +114,15 @@ export default function CourseListScreen() {
 }
 
 const styles = StyleSheet.create({
+  topBar: {
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xs,
+  },
+  screenTitle: {
+    ...typography.h2,
+    color: colors.text,
+  },
   filterSection: {
     paddingHorizontal: spacing.base,
     paddingTop: spacing.sm,

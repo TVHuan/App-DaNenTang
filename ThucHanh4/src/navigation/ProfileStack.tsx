@@ -24,7 +24,7 @@ export default function ProfileStack() {
       <Stack.Screen
         name={ROUTES.PROFILE}
         component={ProfileScreen}
-        options={{ title: 'Thông tin cá nhân' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={ROUTES.EDIT_PROFILE}

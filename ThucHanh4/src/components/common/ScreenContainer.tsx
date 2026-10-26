@@ -35,7 +35,7 @@ export default function ScreenContainer({
   ) : undefined;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <OfflineBanner />
       {scroll ? (
         <ScrollView

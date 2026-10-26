@@ -109,9 +109,10 @@ export function useOutboxSync(onSyncedCallback?: () => void): OutboxSyncState {
 
       if (successCount > 0) {
         Alert.alert('Đồng bộ thành công', `Đã đồng bộ ${successCount} thay đổi lên máy chủ.`);
-        if (onSyncedCallback) {
-          onSyncedCallback();
-        }
+      }
+
+      if (onSyncedCallback && (successCount > 0 || conflictCount > 0)) {
+        onSyncedCallback();
       }
 
       return successCount;
@@ -131,6 +132,13 @@ export function useOutboxSync(onSyncedCallback?: () => void): OutboxSyncState {
     }
     prevOnlineRef.current = isOnline;
   }, [isOnline, syncNow]);
+
+  // Tự động đồng bộ khi khởi động nếu đã online và còn hàng đợi
+  useEffect(() => {
+    if (isOnline && pendingCount > 0 && !syncingRef.current) {
+      syncNow();
+    }
+  }, [isOnline, pendingCount, syncNow]);
 
   return {
     pendingCount,

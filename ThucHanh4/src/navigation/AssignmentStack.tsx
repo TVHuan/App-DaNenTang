@@ -23,7 +23,7 @@ export default function AssignmentStack() {
       <Stack.Screen
         name={ROUTES.ASSIGNMENT_LIST}
         component={AssignmentListScreen}
-        options={{ title: 'Danh sách bài tập' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={ROUTES.ASSIGNMENT_DETAIL}

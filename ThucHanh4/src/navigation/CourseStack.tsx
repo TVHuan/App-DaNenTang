@@ -22,7 +22,7 @@ export default function CourseStack() {
       <Stack.Screen
         name={ROUTES.COURSE_LIST}
         component={CourseListScreen}
-        options={{ title: 'Danh sách môn học' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={ROUTES.COURSE_DETAIL}

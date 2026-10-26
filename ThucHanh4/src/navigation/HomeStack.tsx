@@ -23,7 +23,7 @@ export default function HomeStack() {
       <Stack.Screen
         name={ROUTES.HOME}
         component={HomeScreen}
-        options={{ title: 'Tổng quan' }}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name={ROUTES.HOME_COURSE_DETAIL}

@@ -9,6 +9,46 @@
       "email": "huan.tv@student.edu.vn",
       "phone": "0912345678",
       "updatedAt": "2026-10-20T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "studentCode": "SV21110002",
+      "fullName": "Lê Thị Mai",
+      "className": "CNTT-K21A",
+      "major": "Hệ thống thông tin",
+      "email": "mai.lt@student.edu.vn",
+      "phone": "0912345679",
+      "updatedAt": "2026-10-21T09:00:00Z"
+    },
+    {
+      "id": 3,
+      "studentCode": "SV21110003",
+      "fullName": "Nguyễn Hoàng Nam",
+      "className": "CNTT-K21B",
+      "major": "Kỹ thuật phần mềm",
+      "email": "nam.nh@student.edu.vn",
+      "phone": "0912345680",
+      "updatedAt": "2026-10-22T10:00:00Z"
+    },
+    {
+      "id": 4,
+      "studentCode": "SV21110004",
+      "fullName": "Phạm Thuỳ Dung",
+      "className": "CNTT-K21B",
+      "major": "Khoa học máy tính",
+      "email": "dung.pt@student.edu.vn",
+      "phone": "0912345681",
+      "updatedAt": "2026-10-23T11:00:00Z"
+    },
+    {
+      "id": 5,
+      "studentCode": "SV21110005",
+      "fullName": "Đỗ Minh Tuấn",
+      "className": "CNTT-K21A",
+      "major": "An toàn thông tin",
+      "email": "tuan.dm@student.edu.vn",
+      "phone": "0912345682",
+      "updatedAt": "2026-10-24T12:00:00Z"
     }
   ],
   "courses": [

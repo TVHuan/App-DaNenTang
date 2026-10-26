@@ -14,6 +14,7 @@ import {
 
 import ScreenContainer from '../../components/common/ScreenContainer';
 import LoadingView from '../../components/common/LoadingView';
+import ErrorView from '../../components/common/ErrorView';
 import LastUpdatedText from '../../components/common/LastUpdatedText';
 import CourseCard from '../../components/course/CourseCard';
 import AssignmentItem from '../../components/assignment/AssignmentItem';
@@ -33,6 +34,7 @@ export default function HomeScreen() {
     upcomingAssignments,
     todaySessions,
     loading,
+    error,
     lastUpdated,
     reloadAll,
     toggleAssignmentStatus,
@@ -43,6 +45,14 @@ export default function HomeScreen() {
     return (
       <ScreenContainer>
         <LoadingView message="Đang tải dữ liệu tổng quan…" />
+      </ScreenContainer>
+    );
+  }
+
+  if (error && !student && courses.length === 0) {
+    return (
+      <ScreenContainer>
+        <ErrorView message={error} onRetry={reloadAll} />
       </ScreenContainer>
     );
   }
