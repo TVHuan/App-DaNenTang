@@ -1,0 +1,216 @@
+{
+  "students": [
+    {
+      "id": 1,
+      "studentCode": "SV21110001",
+      "fullName": "Trần Văn Huân",
+      "className": "CNTT-K21A",
+      "major": "Công nghệ thông tin",
+      "email": "huan.tv@student.edu.vn",
+      "phone": "0912345678",
+      "updatedAt": "2026-10-20T08:00:00Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": 1,
+      "code": "INT3120",
+      "name": "Phát triển ứng dụng di động",
+      "credits": 3,
+      "lecturer": "TS. Nguyễn Văn Hùng",
+      "description": "Lập trình ứng dụng di động đa nền tảng với React Native CLI, TypeScript, State Management và REST API.",
+      "semester": "HK1 2026-2027"
+    },
+    {
+      "id": 2,
+      "code": "INT3306",
+      "name": "Phát triển ứng dụng Web",
+      "credits": 4,
+      "lecturer": "ThS. Trần Thị Mai",
+      "description": "Thiết kế kiến trúc Web Fullstack hiện đại với React, Node.js, Next.js và triển khai đám mây.",
+      "semester": "HK1 2026-2027"
+    },
+    {
+      "id": 3,
+      "code": "INT3401",
+      "name": "Kiến trúc và thiết kế phần mềm",
+      "credits": 3,
+      "lecturer": "PGS.TS. Lê Hoàng Nam",
+      "description": "Tìm hiểu các Design Patterns, Microservices, Clean Architecture và tối ưu hóa hệ thống phần mềm lớn.",
+      "semester": "HK1 2026-2027"
+    },
+    {
+      "id": 4,
+      "code": "INT3502",
+      "name": "Trí tuệ nhân tạo ứng dụng",
+      "credits": 3,
+      "lecturer": "TS. Phạm Thuỳ Linh",
+      "description": "Các mô hình học máy (Machine Learning), xử lý ngôn ngữ tự nhiên và tích hợp mô hình AI vào ứng dụng.",
+      "semester": "HK1 2026-2027"
+    },
+    {
+      "id": 5,
+      "code": "INT3603",
+      "name": "Quản lý dự án CNTT",
+      "credits": 2,
+      "lecturer": "ThS. Đỗ Minh Tuấn",
+      "description": "Phương pháp Agile, Scrum, quản trị rủi ro dự án, quản lý chất lượng và lập kế hoạch phần mềm.",
+      "semester": "HK1 2026-2027"
+    }
+  ],
+  "sessions": [
+    {
+      "id": 1,
+      "courseId": 1,
+      "dayOfWeek": 2,
+      "startTime": "07:30",
+      "endTime": "10:00",
+      "room": "P.301-A2",
+      "note": "Mang laptop đã cài sẵn môi trường React Native"
+    },
+    {
+      "id": 2,
+      "courseId": 2,
+      "dayOfWeek": 3,
+      "startTime": "13:00",
+      "endTime": "16:15",
+      "room": "P.405-A2",
+      "note": "Kiểm tra thực hành Web API"
+    },
+    {
+      "id": 3,
+      "courseId": 3,
+      "dayOfWeek": 4,
+      "startTime": "07:30",
+      "endTime": "10:00",
+      "room": "P.204-B3",
+      "note": "Thuyết trình chuyên đề Clean Architecture"
+    },
+    {
+      "id": 4,
+      "courseId": 4,
+      "dayOfWeek": 5,
+      "startTime": "13:30",
+      "endTime": "16:00",
+      "room": "Lab AI-02",
+      "note": "Thực hành huấn luyện mô hình phân loại"
+    },
+    {
+      "id": 5,
+      "courseId": 5,
+      "dayOfWeek": 6,
+      "startTime": "08:00",
+      "endTime": "09:40",
+      "room": "P.102-A1",
+      "note": "Nộp kế hoạch dự án Sprint 2"
+    },
+    {
+      "id": 6,
+      "courseId": 1,
+      "dayOfWeek": 7,
+      "startTime": "09:00",
+      "endTime": "11:30",
+      "room": "Online - Zoom",
+      "note": "Học bù seminar tối ưu hiệu năng React Native"
+    }
+  ],
+  "assignments": [
+    {
+      "id": 1,
+      "courseId": 1,
+      "title": "Thực hành 4: Kết nối REST API & Offline Mode",
+      "description": "Tách tầng API, lưu cache AsyncStorage, xây dựng hàng đợi Outbox và tự đồng bộ khi có mạng.",
+      "dueDate": "2026-11-09T23:59:00Z",
+      "status": "todo",
+      "updatedAt": "2026-10-26T08:00:00Z"
+    },
+    {
+      "id": 2,
+      "courseId": 2,
+      "title": "Xây dựng Backend REST API với Express & MongoDB",
+      "description": "Thiết kế đầy đủ CRUD, xác thực JWT, phân quyền người dùng và kết nối cơ sở dữ liệu MongoDB Atlas.",
+      "dueDate": "2026-10-30T23:59:00Z",
+      "status": "todo",
+      "updatedAt": "2026-10-24T10:00:00Z"
+    },
+    {
+      "id": 3,
+      "courseId": 3,
+      "title": "Báo cáo phân tích kiến trúc Microservices",
+      "description": "Vẽ sơ đồ C4 Model, phân tích ưu nhược điểm kiến trúc Event-Driven so với Monolith.",
+      "dueDate": "2026-11-02T17:00:00Z",
+      "status": "todo",
+      "updatedAt": "2026-10-22T09:00:00Z"
+    },
+    {
+      "id": 4,
+      "courseId": 4,
+      "title": "Xây dựng mô hình phân loại ảnh Convolutional Neural Network",
+      "description": "Huấn luyện mạng CNN trên tập dữ liệu CIFAR-10, đạt độ chính xác trên 85% và xuất mô hình TFLite.",
+      "dueDate": "2026-10-28T23:59:00Z",
+      "status": "done",
+      "updatedAt": "2026-10-25T14:00:00Z"
+    },
+    {
+      "id": 5,
+      "courseId": 5,
+      "title": "Lập biểu đồ WBS và Gantt Chart dự án E-commerce",
+      "description": "Phân rã công việc cho 4 thành viên trong 6 sprint, xác định đường găng và kế hoạch dự phòng.",
+      "dueDate": "2026-10-20T23:59:00Z",
+      "status": "done",
+      "updatedAt": "2026-10-19T11:00:00Z"
+    }
+  ],
+  "grades": [
+    {
+      "id": 1,
+      "courseId": 1,
+      "semester": "HK1 2026-2027",
+      "attendance": 9.5,
+      "midterm": 8.5,
+      "final": 9.0,
+      "total": 8.9,
+      "letter": "A"
+    },
+    {
+      "id": 2,
+      "courseId": 2,
+      "semester": "HK1 2026-2027",
+      "attendance": 9.0,
+      "midterm": 8.0,
+      "final": 8.5,
+      "total": 8.4,
+      "letter": "B+"
+    },
+    {
+      "id": 3,
+      "courseId": 3,
+      "semester": "HK1 2026-2027",
+      "attendance": 10.0,
+      "midterm": 7.5,
+      "final": 8.0,
+      "total": 8.05,
+      "letter": "B+"
+    },
+    {
+      "id": 4,
+      "courseId": 4,
+      "semester": "HK1 2026-2027",
+      "attendance": 8.5,
+      "midterm": 7.0,
+      "final": 7.5,
+      "total": 7.45,
+      "letter": "B"
+    },
+    {
+      "id": 5,
+      "courseId": 5,
+      "semester": "HK1 2026-2027",
+      "attendance": 9.5,
+      "midterm": 9.0,
+      "final": 8.5,
+      "total": 8.75,
+      "letter": "A"
+    }
+  ]
+}

@@ -18,7 +18,7 @@ Sau buổi thực hành, sinh viên biết cách:
 | :--- | :--- |
 | **Hình thức** | Cá nhân |
 | **Đầu vào** | Mã nguồn ứng dụng Quản lý học tập đã hoàn thành ở Thực hành 3 |
-| **Công nghệ bắt buộc** | React Native (Expo), React Navigation (Bottom Tab + Native Stack), `@react-native-async-storage/async-storage`, `@react-native-community/netinfo`, `json-server` |
+| **Công nghệ bắt buộc** | React Native CLI (TypeScript), React Navigation (Bottom Tab + Native Stack), `@react-native-async-storage/async-storage`, `@react-native-community/netinfo`, `json-server` |
 | **Thang điểm** | 10 điểm, cộng tối đa 1 điểm thưởng (tổng không vượt 10) |
 
 ---
@@ -52,8 +52,8 @@ json-server --watch db.json --host 0.0.0.0 --port 3000 --delay 800
 > [!NOTE]
 > **Lưu ý về địa chỉ server:**
 > - **Máy ảo Android**: gọi tới `http://10.0.2.2:3000`.
-> - **Điện thoại thật dùng Expo Go**: gọi tới `http://<IP-LAN-của-máy-tính>:3000`. Điện thoại và máy tính phải cùng mạng Wi-Fi.
-> - `BASE_URL` phải đặt trong một file cấu hình riêng (`src/config.js`), không viết trực tiếp vào từng màn hình.
+> - **Điện thoại thật / Thiết bị vật lý**: gọi tới `http://<IP-LAN-của-máy-tính>:3000`. Điện thoại và máy tính phải cùng mạng Wi-Fi.
+> - `BASE_URL` phải đặt trong một file cấu hình riêng (`src/config.ts`), không viết trực tiếp vào từng màn hình.
 
 ### Các endpoint ứng dụng cần dùng:
 
@@ -154,7 +154,7 @@ json-server --watch db.json --host 0.0.0.0 --port 3000 --delay 800
 | **Cá nhân** | `ProfileScreen`: mã sinh viên, họ tên, lớp, ngành, email, số điện thoại; GPA tóm tắt | `EditProfile`, `GradeList`, `GradeDetail` | `/students/1`, `/grades` | Sửa thông tin đưa vào hàng đợi; điểm hiển thị từ cache |
 
 ### Quy tắc điều hướng:
-1. Tên màn hình khai báo một lần trong `navigation/routes.js`, không viết chuỗi trực tiếp khi gọi `navigate`.
+1. Tên màn hình khai báo một lần trong `navigation/routes.ts`, không viết chuỗi trực tiếp khi gọi `navigate`.
 2. Màn hình chi tiết chỉ nhận `{ id }` qua `route.params`; tiêu đề header là tên mục được chọn (đặt bằng `navigation.setOptions`).
 3. Mọi màn hình chi tiết có nút quay lại; sau khi lưu form thành công thì tự quay về màn hình trước.
 4. Tab Bài tập hiển thị `tabBarBadge` bằng số bài chưa hoàn thành; tab nào cũng có biểu tượng.
@@ -177,8 +177,8 @@ json-server --watch db.json --host 0.0.0.0 --port 3000 --delay 800
 ### Phần A. Gọi API (4 điểm)
 
 - **A1. Tầng gọi API.** Tạo thư mục `src/api/` gồm:
-  - `client.js`: hàm chung để gọi API bằng `fetch` hoặc `axios`. Hàm này có timeout 10 giây, kiểm tra mã HTTP và trả về lỗi đã chuẩn hóa.
-  - Mỗi tài nguyên có một file service riêng: `courseService.js`, `assignmentService.js`, …
+  - `client.ts`: hàm chung để gọi API bằng `fetch` hoặc `axios`. Hàm này có timeout 10 giây, kiểm tra mã HTTP và trả về lỗi đã chuẩn hóa.
+  - Mỗi tài nguyên có một file service riêng: `courseService.ts`, `assignmentService.ts`, …
   - Màn hình **không được** gọi `fetch` trực tiếp.
 - **A2. Thay dữ liệu mẫu bằng dữ liệu từ API** cho cả 5 màn hình chính và 4 màn hình chi tiết. Màn hình chi tiết chỉ nhận `id` qua `route.params` rồi tự gọi API lấy chi tiết, không truyền cả object qua params.
 - **A3. Xử lý đủ 4 trạng thái** trên mọi màn hình danh sách:
@@ -213,7 +213,7 @@ json-server --watch db.json --host 0.0.0.0 --port 3000 --delay 800
 - Có bộ lọc theo học kỳ.
 - Bấm vào một môn để mở Chi tiết kết quả học tập: điểm chuyên cần, giữa kỳ, cuối kỳ, tổng kết, điểm chữ.
 
-#### Bảng quy đổi điểm dùng trong `utils/gpa.js`:
+#### Bảng quy đổi điểm dùng trong `utils/gpa.ts`:
 
 | Điểm hệ 10 | Điểm chữ | Điểm hệ 4 |
 | :---: | :---: | :---: |
@@ -246,89 +246,89 @@ Dự án bắt buộc theo đúng cây thư mục dưới đây: đúng tên fil
 
 ```text
 StudyManager/
-├── App.js                        # Chỉ bọc Provider + AppNavigator
+├── App.tsx                       # Chỉ bọc Provider + AppNavigator
 ├── db.json                       # Dữ liệu json-server
 ├── README.md
 └── src/
-    ├── config.js                 # BASE_URL, TIMEOUT, CACHE_TTL
+    ├── config.ts                 # BASE_URL, TIMEOUT, CACHE_TTL
     ├── api/
-    │   ├── client.js             # request(method, url, body)
-    │   ├── studentService.js
-    │   ├── courseService.js
-    │   ├── sessionService.js
-    │   ├── assignmentService.js
-    │   └── gradeService.js
+    │   ├── client.ts             # request(method, url, body)
+    │   ├── studentService.ts
+    │   ├── courseService.ts
+    │   ├── sessionService.ts
+    │   ├── assignmentService.ts
+    │   └── gradeService.ts
     ├── storage/
-    │   ├── keys.js               # Tên khóa AsyncStorage
-    │   ├── cache.js              # getCache, setCache
-    │   └── outbox.js             # enqueue, getAll, remove
+    │   ├── keys.ts               # Tên khóa AsyncStorage
+    │   ├── cache.ts              # getCache, setCache
+    │   └── outbox.ts             # enqueue, getAll, remove
     ├── context/
-    │   ├── AppDataContext.js     # student, courses, assignments, grades
-    │   └── SyncContext.js        # isOnline, pendingCount, syncNow
+    │   ├── AppDataContext.tsx    # student, courses, assignments, grades
+    │   └── SyncContext.tsx       # isOnline, pendingCount, syncNow
     ├── hooks/
-    │   ├── useNetworkStatus.js
-    │   ├── useCachedQuery.js
-    │   └── useOutboxSync.js
+    │   ├── useNetworkStatus.ts
+    │   ├── useCachedQuery.ts
+    │   └── useOutboxSync.ts
     ├── navigation/
-    │   ├── routes.js             # Hằng số tên màn hình
-    │   ├── AppNavigator.js       # Bottom Tab 5 tab
-    │   ├── HomeStack.js
-    │   ├── CourseStack.js
-    │   ├── ScheduleStack.js
-    │   ├── AssignmentStack.js
-    │   └── ProfileStack.js
+    │   ├── routes.ts             # Hằng số tên màn hình
+    │   ├── AppNavigator.tsx      # Bottom Tab 5 tab
+    │   ├── HomeStack.tsx
+    │   ├── CourseStack.tsx
+    │   ├── ScheduleStack.tsx
+    │   ├── AssignmentStack.tsx
+    │   └── ProfileStack.tsx
     ├── screens/
     │   ├── home/
-    │   │   └── HomeScreen.js
+    │   │   └── HomeScreen.tsx
     │   ├── courses/
-    │   │   ├── CourseListScreen.js
-    │   │   └── CourseDetailScreen.js
+    │   │   ├── CourseListScreen.tsx
+    │   │   └── CourseDetailScreen.tsx
     │   ├── schedule/
-    │   │   ├── ScheduleScreen.js
-    │   │   └── SessionDetailScreen.js
+    │   │   ├── ScheduleScreen.tsx
+    │   │   └── SessionDetailScreen.tsx
     │   ├── assignments/
-    │   │   ├── AssignmentListScreen.js
-    │   │   ├── AssignmentDetailScreen.js
-    │   │   └── AssignmentFormScreen.js
+    │   │   ├── AssignmentListScreen.tsx
+    │   │   ├── AssignmentDetailScreen.tsx
+    │   │   └── AssignmentFormScreen.tsx
     │   └── profile/
-    │       ├── ProfileScreen.js
-    │       ├── EditProfileScreen.js
-    │       ├── GradeListScreen.js
-    │       └── GradeDetailScreen.js
+    │       ├── ProfileScreen.tsx
+    │       ├── EditProfileScreen.tsx
+    │       ├── GradeListScreen.tsx
+    │       └── GradeDetailScreen.tsx
     ├── components/
     │   ├── common/
-    │   │   ├── ScreenContainer.js
-    │   │   ├── OfflineBanner.js
-    │   │   ├── LoadingView.js
-    │   │   ├── ErrorView.js
-    │   │   ├── EmptyState.js
-    │   │   ├── SearchBar.js
-    │   │   ├── FilterChips.js
-    │   │   ├── SyncBadge.js
-    │   │   ├── LastUpdatedText.js
-    │   │   ├── AppButton.js
-    │   │   └── FormInput.js
+    │   │   ├── ScreenContainer.tsx
+    │   │   ├── OfflineBanner.tsx
+    │   │   ├── LoadingView.tsx
+    │   │   ├── ErrorView.tsx
+    │   │   ├── EmptyState.tsx
+    │   │   ├── SearchBar.tsx
+    │   │   ├── FilterChips.tsx
+    │   │   ├── SyncBadge.tsx
+    │   │   ├── LastUpdatedText.tsx
+    │   │   ├── AppButton.tsx
+    │   │   └── FormInput.tsx
     │   ├── course/
-    │   │   └── CourseCard.js
+    │   │   └── CourseCard.tsx
     │   ├── schedule/
-    │   │   ├── DaySelector.js
-    │   │   └── SessionCard.js
+    │   │   ├── DaySelector.tsx
+    │   │   └── SessionCard.tsx
     │   ├── assignment/
-    │   │   ├── AssignmentItem.js
-    │   │   └── StatusToggle.js
+    │   │   ├── AssignmentItem.tsx
+    │   │   └── StatusToggle.tsx
     │   ├── grade/
-    │   │   ├── GpaSummary.js
-    │   │   └── GradeRow.js
+    │   │   ├── GpaSummary.tsx
+    │   │   └── GradeRow.tsx
     │   └── profile/
-    │       └── InfoRow.js
+    │       └── InfoRow.tsx
     ├── theme/
-    │   ├── colors.js
-    │   ├── spacing.js
-    │   └── typography.js
+    │   ├── colors.ts
+    │   ├── spacing.ts
+    │   └── typography.ts
     └── utils/
-        ├── date.js               # formatDate, isOverdue, daysLeft
-        ├── gpa.js                # toScale4, calcGpa
-        └── validators.js
+        ├── date.ts               # formatDate, isOverdue, daysLeft
+        ├── gpa.ts                # toScale4, calcGpa
+        └── validators.ts
 ```
 
 ### 5.2. Phân tầng và quy tắc phụ thuộc
@@ -337,11 +337,11 @@ Mỗi tầng chỉ được gọi tầng ngay bên dưới nó:
 
 | Tầng | Được phép dùng | Không được phép |
 | :--- | :--- | :--- |
-| `screens/` | `components/`, `hooks/`, `context/`, `navigation/routes.js` | Gọi `fetch`, `axios`, `AsyncStorage` trực tiếp |
+| `screens/` | `components/`, `hooks/`, `context/`, `navigation/routes.ts` | Gọi `fetch`, `axios`, `AsyncStorage` trực tiếp |
 | `components/` | `theme/`, `utils/`, component khác | Gọi API, đọc Context, dùng navigation |
 | `hooks/`, `context/` | `api/`, `storage/`, `utils/` | Import component hoặc screen |
-| `api/` | `config.js` | Dùng `AsyncStorage`, Context, React |
-| `storage/` | `storage/keys.js` | Gọi API |
+| `api/` | `config.ts` | Dùng `AsyncStorage`, Context, React |
+| `storage/` | `storage/keys.ts` | Gọi API |
 
 ### 5.3. Quy tắc chung cho mọi component
 
@@ -349,10 +349,10 @@ Mỗi tầng chỉ được gọi tầng ngay bên dưới nó:
 2. **Thứ tự trong file**: `import` → `component` → `StyleSheet.create` ở cuối file. Không viết style inline, trừ giá trị động.
 3. Không viết cứng màu, cỡ chữ, khoảng cách: lấy từ `theme/`.
 4. Component trong `components/` là component trình bày: chỉ nhận dữ liệu qua props, báo sự kiện qua callback `onXxx`. Không gọi API, không đọc Context.
-5. Props tùy chọn phải có giá trị mặc định. Props bắt buộc được ghi chú bằng JSDoc ở đầu file.
+5. Props tùy chọn phải có giá trị mặc định. Định nghĩa TypeScript Interface rõ ràng cho Props.
 6. Vùng bấm tối thiểu $44 \times 44$; mọi nút có `accessibilityLabel`.
 7. Item trong `FlatList` bọc `React.memo`; `FlatList` luôn có `keyExtractor` và `ListEmptyComponent`.
-8. Văn bản hiển thị bằng tiếng Việt, ngày giờ định dạng qua `utils/date.js` (`dd/MM/yyyy`, `HH:mm`).
+8. Văn bản hiển thị bằng tiếng Việt, ngày giờ định dạng qua `utils/date.ts` (`dd/MM/yyyy`, `HH:mm`).
 
 ### 5.4. Đặc tả component dùng chung
 
@@ -387,25 +387,19 @@ Mỗi tầng chỉ được gọi tầng ngay bên dưới nó:
 
 | File | Hàm xuất ra | Hợp đồng |
 | :--- | :--- | :--- |
-| `api/client.js` | `request(method, url, body)` | Trả về dữ liệu JSON; khi lỗi thì throw đối tượng `{ type, status, message }`, trong đó type là `'network'`, `'timeout'` hoặc `'http'` |
-| `api/*Service.js` | `getAll()`, `getById(id)`, `update(id, data)`, `create(data)` | Chỉ gọi `request`, không xử lý cache |
-| `storage/cache.js` | `getCache(key)`, `setCache(key, data)` | Lưu `{ data, savedAt }` |
-| `storage/outbox.js` | `enqueue(action)`, `getAll()`, `remove(id)` | Giữ đúng thứ tự thêm vào |
-| `hooks/useNetworkStatus.js` | `useNetworkStatus()` | Trả về `{ isOnline }` |
-| `hooks/useCachedQuery.js` | `useCachedQuery(key, fetcher)` | Trả về `{ data, loading, error, refreshing, lastUpdated, refresh }` |
-| `hooks/useOutboxSync.js` | `useOutboxSync()` | Tự đồng bộ khi `isOnline` chuyển sang `true`; trả về `{ pendingCount, syncing, syncNow }` |
-| `utils/gpa.js` | `toScale4(score10)`, `calcGpa(grades, courses)` | Có trọng số theo tín chỉ |
+| `api/client.ts` | `request(method, url, body)` | Trả về dữ liệu JSON; khi lỗi thì throw đối tượng `{ type, status, message }`, trong đó type là `'network'`, `'timeout'` hoặc `'http'` |
+| `api/*Service.ts` | `getAll()`, `getById(id)`, `update(id, data)`, `create(data)` | Chỉ gọi `request`, không xử lý cache |
+| `storage/cache.ts` | `getCache(key)`, `setCache(key, data)` | Lưu `{ data, savedAt }` |
+| `storage/outbox.ts` | `enqueue(action)`, `getAll()`, `remove(id)` | Giữ đúng thứ tự thêm vào |
+| `hooks/useNetworkStatus.ts` | `useNetworkStatus()` | Trả về `{ isOnline }` |
+| `hooks/useCachedQuery.ts` | `useCachedQuery(key, fetcher)` | Trả về `{ data, loading, error, refreshing, lastUpdated, refresh }` |
+| `hooks/useOutboxSync.ts` | `useOutboxSync()` | Tự đồng bộ khi `isOnline` chuyển sang `true`; trả về `{ pendingCount, syncing, syncNow }` |
+| `utils/gpa.ts` | `toScale4(score10)`, `calcGpa(grades, courses)` | Có trọng số theo tín chỉ |
 
 ### 5.7. Ví dụ component đạt chuẩn
 
-```javascript
-// src/components/common/EmptyState.js
-/**
- * @param {string} title - Bắt buộc
- * @param {string} [description]
- * @param {string} [actionLabel]
- * @param {() => void} [onAction]
- */
+```tsx
+// src/components/common/EmptyState.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import AppButton from './AppButton';
@@ -413,7 +407,19 @@ import colors from '../../theme/colors';
 import spacing from '../../theme/spacing';
 import typography from '../../theme/typography';
 
-export default function EmptyState({ title, description = '', actionLabel = 'Thử lại', onAction }) {
+interface EmptyStateProps {
+  title: string;
+  description?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}
+
+export default function EmptyState({
+  title,
+  description = '',
+  actionLabel = 'Thử lại',
+  onAction,
+}: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
@@ -463,7 +469,7 @@ const styles = StyleSheet.create({
 
 ## 8. Điểm cộng (tối đa +1)
 
-- Dùng **SQLite** (`expo-sqlite`) thay cho `AsyncStorage` để lưu cache và hàng đợi.
-- Đặt **thông báo cục bộ** (`expo-notifications`) nhắc bài tập trước hạn 24 giờ.
+- Dùng **SQLite** (`react-native-quick-sqlite` hoặc `react-native-sqlite-storage`) thay cho `AsyncStorage` để lưu cache và hàng đợi.
+- Đặt **thông báo cục bộ** (`@notifee/react-native`) nhắc bài tập trước hạn 24 giờ.
 - Dùng **TanStack Query** với `persistQueryClient`. Phần hàng đợi offline vẫn phải tự viết, không dùng thư viện làm sẵn.
 - Đưa server lên **MockAPI.io** hoặc **Render** để demo không cần mạng LAN.
