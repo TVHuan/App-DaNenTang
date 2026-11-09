@@ -7,6 +7,7 @@ const typography: {
   subtitle: TextStyle;
   body: TextStyle;
   bodyBold: TextStyle;
+  bodySmall: TextStyle;
   caption: TextStyle;
   badge: TextStyle;
 } = {
@@ -39,6 +40,11 @@ const typography: {
     fontSize: 14,
     fontWeight: '600',
     lineHeight: 20,
+  },
+  bodySmall: {
+    fontSize: 13,
+    fontWeight: '400',
+    lineHeight: 18,
   },
   caption: {
     fontSize: 12,

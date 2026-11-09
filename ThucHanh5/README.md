@@ -1,196 +1,244 @@
-# StudyManager - Ứng dụng Quản lý Học tập (Thực hành 4: REST API & Chế độ Offline)
+# BÀI THỰC HÀNH 5: CHAT 1-1 REALTIME VỚI FIREBASE (REACT NATIVE CLI)
 
-Ứng dụng di động quản lý học tập đa nền tảng được phát triển bằng **React Native CLI (TypeScript)**, kết nối REST API với server giả lập `json-server`, hỗ trợ chế độ hoạt động ngoại tuyến (**Offline Mode**) và cơ chế tự động đồng bộ (**Auto-sync & Outbox Queue**).
-
----
-
-## 1. Tính năng nổi bật
-
-### A. Kết nối REST API & Quản lý trạng thái
-- **Kiến trúc phân tầng sạch (Clean Layered Architecture)**: Màn hình không gọi trực tiếp API mà thông qua Custom Hooks và tầng Services (`studentService`, `courseService`, `sessionService`, `assignmentService`, `gradeService`).
-- **Tầng Client chuẩn hóa (`api/client.ts`)**: Timeout 10 giây, chuẩn hóa mã lỗi HTTP/Network/Timeout.
-- **Xử lý trọn vẹn 4 trạng thái giao diện**: Đang tải (`LoadingView`), Có dữ liệu, Danh sách rỗng (`EmptyState`), Lỗi kèm nút thử lại (`ErrorView`).
-- **Kéo để làm mới (`Pull to Refresh`)**: Tích hợp trên tất cả các danh sách màn hình.
-- **Thêm bài tập mới (POST)**: Form nhập liệu có validation (tiêu đề không để trống, hạn nộp không ở quá khứ).
-- **Cập nhật lạc quan (Optimistic Update)**: Đổi trạng thái bài tập (`todo` ↔ `done`) phản hồi tức thì trên UI; tự động hoàn tác và thông báo nếu API thất bại.
-
-### B. Chế độ Ngoại tuyến (Offline Mode) & Tự đồng bộ
-- **Theo dõi kết nối mạng (`useNetworkStatus`)**: Banner cảnh báo *"Bạn đang offline"* hiển thị đồng bộ trên toàn bộ ứng dụng qua `ScreenContainer`.
-- **Chiến lược "Cache trước - Mạng sau" (Cache-first, Network-fallback)**:
-  - Dữ liệu luôn được đọc lập tức từ `AsyncStorage` khi mở app kèm thời điểm `LastUpdatedText` (*"Cập nhật lần cuối: HH:mm, dd/MM/yyyy"*).
-  - Tự động gọi API cập nhật nền khi có mạng.
-- **Hàng đợi thao tác ngoại tuyến (Outbox Queue)**:
-  - Khi offline, các thao tác đổi trạng thái bài tập, thêm bài tập mới hoặc sửa thông tin cá nhân không bị chặn.
-  - Các thao tác được lưu tuần tự vào `AsyncStorage` theo định dạng `{ id, method, url, body, createdAt }`.
-  - Item chưa đồng bộ hiển thị nhãn nổi bật `SyncBadge` (*"Chưa đồng bộ"*).
-- **Tự động đồng bộ (Auto-sync)**:
-  - Khi thiết bị có mạng trở lại, hook `useOutboxSync` tự động gửi tuần tự các thao tác trong hàng đợi lên server.
-  - Sau khi đồng bộ thành công, hiển thị thông báo *"Đã đồng bộ X thay đổi lên máy chủ"*.
-- **Xử lý xung đột (Conflict Resolution - B5)**:
-  - So sánh trường thời gian `updatedAt` giữa bản ghi trên server và thao tác trong Outbox.
-  - Nếu dữ liệu server mới hơn thay đổi offline: Hệ thống ưu tiên dữ liệu server, hủy thao tác cũ và hiển thị thông báo cho người dùng.
-
-### C. Quản lý Kết quả học tập & Điểm số
-- Tính điểm GPA hệ 4 có trọng số theo số tín chỉ môn học:
-  $$\text{GPA} = \frac{\sum (\text{Điểm hệ 4} \times \text{Số tín chỉ})}{\sum \text{Số tín chỉ}}$$
-- Quy đổi điểm hệ 10 sang thang điểm chữ (A, B+, B, C+, C, D+, D, F) và hệ 4 chuẩn xác.
-- Môn học bị điểm F không được tính vào số tín chỉ tích lũy.
-- Bộ lọc kết quả học tập theo học kỳ.
+Dự án ứng dụng di động nhắn tin 1-1 thời gian thực (Realtime Chat) được xây dựng hoàn toàn bằng **React Native CLI** (không dùng Expo), tích hợp **Firebase JS SDK** (`firebase/auth`, `firebase/database`) và thư viện định vị **@react-native-community/geolocation**.
 
 ---
 
-## 2. Sơ đồ Luồng Dữ liệu (Data Flow Diagram)
+## 1. Các tính năng hoàn thiện theo yêu cầu
 
-$$\text{Màn hình (Screens)} \longrightarrow \text{Hook (useCachedQuery / useOutboxSync)} \longrightarrow \text{Service (API Services)} \longrightarrow \text{Cache / Outbox (AsyncStorage)} \longleftrightarrow \text{API (json-server)}$$
+### 1.1. Đăng ký / Đăng nhập
+- **Màn hình Đăng ký (`RegisterScreen`)**:
+  - Gồm đầy đủ các trường: Họ và tên, Email, Mật khẩu (tối thiểu 6 ký tự) và Nhập lại mật khẩu.
+  - Kiểm tra tính hợp lệ: định dạng email, độ dài mật khẩu, mật khẩu nhập lại trùng khớp.
+  - Lưu trữ thông tin người dùng vào Firebase Realtime Database tại node `/users/{uid}`.
+- **Màn hình Đăng nhập (`LoginScreen`)**:
+  - Đăng nhập bằng Firebase Authentication (`signInWithEmailAndPassword`).
+  - Xử lý thông báo lỗi bằng tiếng Việt rõ ràng khi sai tài khoản hoặc mật khẩu (vd: "Sai email hoặc mật khẩu. Vui lòng kiểm tra lại", "Địa chỉ email không đúng định dạng", v.v.).
+  - Tích hợp các nút đăng nhập nhanh (Quick Demo) giúp kiểm thử thuận tiện.
+- **Đăng xuất (`SettingsScreen`)**:
+  - Đăng xuất tài khoản, cập nhật trạng thái `isOnline: false` và `lastSeen` lên Firebase, tự động điều hướng quay về màn hình Đăng nhập.
 
-```mermaid
-graph TD
-    A[Màn hình / Screens] -->|Gọi hook / context| B[Hooks / Context]
-    B -->|Đọc / Ghi Cache| C[storage/cache.ts & outbox.ts]
-    C -->|Lưu trữ bền vững| D[(AsyncStorage)]
-    B -->|Gọi phương thức| E[api/*Service.ts]
-    E -->|request HTTP timeout 10s| F[api/client.ts]
-    F -->|REST Calls| G[Mock API: json-server :3000]
-    
-    subgraph Offline Mode
-        A -.->|Thao tác ngoại tuyến| C
-        C -.->|Lưu hàng đợi| D
-        D -.->|Khi online trở lại| B
-    end
+### 1.2. Danh bạ (Contacts)
+- Lấy danh sách toàn bộ người dùng đã đăng ký từ Firebase (`/users`), tự động lọc bỏ tài khoản của chính mình.
+- Hiển thị trạng thái **Online / Offline** cập nhật theo thời gian thực (chấm tròn xanh "Đang hoạt động" khi online, hiển thị giờ hoạt động gần nhất khi offline).
+- Thanh tìm kiếm theo tên hoặc email.
+- Nhấn vào một người để mở ngay màn hình Chat 1-1 với người đó.
+
+### 1.3. Chat 1-1 Realtime
+- Gửi và nhận tin nhắn ngay lập tức qua Firebase Realtime Database (`onValue`), không cần tải lại trang.
+- Giao diện trực quan:
+  - **Tin của mình**: Nằm bên phải, bong bóng màu xanh (`#2563EB`), chữ trắng.
+  - **Tin của đối phương**: Nằm bên trái, bong bóng màu xám sáng, kèm ảnh đại diện.
+  - Mỗi tin nhắn đều hiển thị thời gian gửi (giờ:phút).
+- **Tự động cuộn** xuống tin mới nhất khi có tin nhắn mới hoặc khi vừa mở cuộc trò chuyện.
+- Không cho gửi tin rỗng (nút gửi bị vô hiệu hóa khi ô nhập trống).
+- **Thanh tiêu đề (Header)**: Hiển thị avatar, họ tên và chấm trạng thái online/offline của đối phương cập nhật thời gian thực.
+- **Tin nhắn chia sẻ vị trí (Geolocation)**:
+  - Tích hợp nút gửi vị trí GPS sử dụng `@react-native-community/geolocation`.
+  - Hiển thị tọa độ vĩ độ/kinh độ, địa chỉ và nút "Xem trên bản đồ" liên kết trực tiếp tới Google Maps.
+
+### 1.4. Màn hình Home (Cuộc trò chuyện gần đây)
+- Hiển thị danh sách các cuộc trò chuyện đã có của người dùng hiện tại tại node `/userChats/{uid}`.
+- Gồm ảnh đại diện, tên, nội dung tin nhắn cuối cùng (có tiền tố "Bạn:" nếu do mình gửi, icon 📍 nếu là vị trí) và thời gian.
+- **Sắp xếp theo thời gian mới nhất**: Cuộc trò chuyện có tin nhắn mới nhất tự động được đẩy lên đầu danh sách.
+- **Badge số tin chưa đọc**: Tăng ngay lập tức khi đối phương gửi tin nhắn mới, và tự động về 0 ngay khi mở cuộc trò chuyện đó (`markChatAsRead`).
+
+### 1.5. Màn hình Thông báo (Notifications)
+- Giữ giao diện và tính năng Thông báo như Bài 4:
+  - Danh sách thông báo với icon phân loại (tin nhắn, bạn bè, hệ thống, tương tác).
+  - Badge số thông báo chưa đọc, nút "Đọc tất cả".
+  - Chạm vào từng thông báo để đánh dấu đã đọc.
+
+---
+
+## 2. Cấu trúc thư mục dự án
+
+Toàn bộ code Firebase được gom chuẩn hóa vào thư mục `src/services/` theo đúng yêu cầu kỹ thuật:
+
+```
+ThucHanh5/
+├── src/
+│   ├── components/
+│   │   └── common/
+│   │       ├── AppButton.tsx        # Nút bấm tùy biến
+│   │       ├── FormInput.tsx        # Ô nhập liệu có ẩn/hiện mật khẩu
+│   │       ├── SearchBar.tsx        # Thanh tìm kiếm
+│   │       └── UserAvatar.tsx       # Avatar kèm chấm online/offline
+│   ├── context/
+│   │   └── AuthContext.tsx          # Quản lý phiên đăng nhập & presence
+│   ├── navigation/
+│   │   ├── MainTabNavigator.tsx     # 4 Tabs: Trò chuyện, Danh bạ, Thông báo, Cài đặt
+│   │   ├── RootNavigator.tsx        # Điều hướng Auth Stack & App Stack
+│   │   └── routes.ts                # Định nghĩa tên routes & TypeScript types
+│   ├── screens/
+│   │   ├── auth/
+│   │   │   ├── LoginScreen.tsx      # Màn hình Đăng nhập
+│   │   │   └── RegisterScreen.tsx   # Màn hình Đăng ký
+│   │   ├── home/
+│   │   │   └── HomeScreen.tsx       # Cuộc trò chuyện gần đây & Unread badge
+│   │   ├── contacts/
+│   │   │   └── ContactsScreen.tsx   # Danh bạ & Trạng thái online realtime
+│   │   ├── chat/
+│   │   │   └── ChatScreen.tsx       # Chat 1-1, tin thường & tin vị trí GPS
+│   │   ├── notifications/
+│   │   │   └── NotificationsScreen.tsx # Màn hình thông báo
+│   │   └── settings/
+│   │       └── SettingsScreen.tsx   # Thông tin tài khoản & Đăng xuất
+│   ├── services/
+│   │   ├── firebaseConfig.ts        # Cấu hình Firebase App, Auth, Database
+│   │   ├── authService.ts           # Đăng nhập, đăng ký, đăng xuất, map lỗi tiếng Việt
+│   │   ├── userService.ts           # Lấy danh bạ, presence tracking (.info/connected)
+│   │   ├── chatService.ts           # Gửi tin nhắn, subscribe messages & userChats
+│   │   └── locationService.ts       # Định vị GPS (@react-native-community/geolocation)
+│   ├── theme/
+│   │   ├── colors.ts                # Bảng màu giao diện chuẩn
+│   │   ├── spacing.ts               # Khoảng cách padding/margin
+│   │   └── typography.ts            # Kiểu chữ
+│   ├── types/
+│   │   └── index.ts                 # TypeScript interfaces (User, Message, Chat)
+│   └── utils/
+│       └── date.ts                  # Tiện ích định dạng ngày giờ
+├── App.tsx                          # Root component
+├── index.js                         # Entry point
+└── package.json
 ```
 
 ---
 
-## 3. Cơ chế Xử lý Xung đột Dữ liệu (Conflict Resolution)
+## 3. Cấu hình Firebase & Luật bảo mật (Security Rules)
 
-Theo yêu cầu mục B5 của đề bài:
-1. Khi ứng dụng thực hiện các thao tác cập nhật (như `PATCH /students/1` hoặc `PATCH /assignments/:id`), trường thời gian `updatedAt` (ISO 8601) luôn được đính kèm vào payload của thao tác trong hàng đợi Outbox.
-2. Khi kết nối mạng phục hồi, trước khi gửi lệnh PATCH/PUT, hook `useOutboxSync` thực hiện gọi `GET` để kiểm tra phiên bản dữ liệu hiện tại trên `json-server`.
-3. Hệ thống so sánh:
-   $$\text{serverTime} = \text{new Date}(serverItem.updatedAt).\text{getTime}()$$
-   $$\text{localTime} = \text{new Date}(action.body.updatedAt).\text{getTime}()$$
-4. **Quy tắc giải quyết**:
-   - Nếu `serverTime > localTime`: Dữ liệu trên server đã được cập nhật bởi một nguồn khác mới hơn. Ứng dụng **ưu tiên giữ nguyên dữ liệu server**, xóa thao tác cũ trong hàng đợi và hiển thị thông báo: *"Phát hiện xung đột: Dữ liệu trên server mới hơn thay đổi offline. Đã ưu tiên giữ dữ liệu mới nhất từ server."*
-   - Nếu `serverTime <= localTime`: Thao tác offline được gửi lên server bình thường và cập nhật trạng thái mới.
+### 3.1. Thiết lập Firebase Project
+1. Truy cập [Firebase Console](https://console.firebase.google.com/) và bấm **Add project** (Đặt tên: `thuchanh5-chat`).
+2. **Authentication**:
+   - Chọn menu **Build** > **Authentication** > **Get started**.
+   - Tab **Sign-in method** > Chọn **Email/Password** > Bật **Enable** > Bấm **Save**.
+3. **Realtime Database**:
+   - Chọn menu **Build** > **Realtime Database** > **Create Database**.
+   - Chọn khu vực (khuyến nghị: `Singapore - asia-southeast1`).
+   - Chọn **Start in test mode** hoặc chuyển sang tab **Rules** và dán bộ luật bảo mật bên dưới.
+4. **Lấy cấu hình Web SDK**:
+   - Vào **Project Settings** (biểu tượng bánh răng) > cuộn xuống mục **Your apps** > chọn biểu tượng Web `</>`.
+   - Copy các giá trị trong biến `firebaseConfig` và dán vào file:
+     `src/services/firebaseConfig.ts`.
 
----
+### 3.2. Cấu trúc dữ liệu trong Realtime Database
+```json
+{
+  "users": {
+    "<uid>": {
+      "uid": "string",
+      "displayName": "string",
+      "email": "string",
+      "avatar": "url",
+      "isOnline": true,
+      "lastSeen": 1700000000000
+    }
+  },
+  "chats": {
+    "<chatId>": {
+      "messages": {
+        "<messageId>": {
+          "id": "string",
+          "senderId": "string",
+          "senderName": "string",
+          "receiverId": "string",
+          "text": "string",
+          "type": "text | location",
+          "location": { "latitude": 21.02, "longitude": 105.85, "address": "string" },
+          "createdAt": 1700000000000
+        }
+      }
+    }
+  },
+  "userChats": {
+    "<uid>": {
+      "<otherUid>": {
+        "chatId": "string",
+        "otherUser": { "uid": "string", "displayName": "string", "avatar": "url" },
+        "lastMessage": { "text": "string", "senderId": "string", "createdAt": 1700000000000 },
+        "unreadCount": 0,
+        "updatedAt": 1700000000000
+      }
+    }
+  }
+}
+```
 
-## 4. Cấu trúc thư mục chuẩn dự án
+### 3.3. Security Rules (Luật bảo mật)
+Dán luật này vào tab **Rules** của Realtime Database trên Firebase Console:
 
-```text
-ThucHanh4/
-├── App.tsx                       # Bọc Providers + AppNavigator
-├── db.json                       # CSDL json-server (5 bảng dữ liệu)
-├── README.md                     # Hướng dẫn chạy & tài liệu kiến trúc
-└── src/
-    ├── config.ts                 # BASE_URL (10.0.2.2:3000), TIMEOUT (10s), CACHE_TTL
-    ├── api/
-    │   ├── client.ts             # request(method, url, body) timeout 10s & chuẩn hóa lỗi
-    │   ├── studentService.ts
-    │   ├── courseService.ts
-    │   ├── sessionService.ts
-    │   ├── assignmentService.ts
-    │   └── gradeService.ts
-    ├── storage/
-    │   ├── keys.ts               # Các hằng số key AsyncStorage
-    │   ├── cache.ts              # getCache, setCache lưu { data, savedAt }
-    │   └── outbox.ts             # enqueue, getAll, remove (FIFO queue)
-    ├── context/
-    │   ├── AppDataContext.tsx    # student, courses, assignments, grades, sessions
-    │   └── SyncContext.tsx       # isOnline, pendingCount, syncNow
-    ├── hooks/
-    │   ├── useNetworkStatus.ts   # Theo dõi mạng @react-native-community/netinfo
-    │   ├── useCachedQuery.ts     # Cache trước, mạng sau
-    │   └── useOutboxSync.ts      # Tự đồng bộ & giải quyết xung đột
-    ├── navigation/
-    │   ├── routes.ts             # Hằng số route navigation
-    │   ├── AppNavigator.tsx      # Bottom Tab 5 tabs có badge bài tập
-    │   ├── HomeStack.tsx
-    │   ├── CourseStack.tsx
-    │   ├── ScheduleStack.tsx
-    │   ├── AssignmentStack.tsx
-    │   └── ProfileStack.tsx
-    ├── screens/
-    │   ├── home/
-    │   │   └── HomeScreen.tsx
-    │   ├── courses/
-    │   │   ├── CourseListScreen.tsx
-    │   │   └── CourseDetailScreen.tsx
-    │   ├── schedule/
-    │   │   ├── ScheduleScreen.tsx
-    │   │   └── SessionDetailScreen.tsx
-    │   ├── assignments/
-    │   │   ├── AssignmentListScreen.tsx
-    │   │   ├── AssignmentDetailScreen.tsx
-    │   │   └── AssignmentFormScreen.tsx
-    │   └── profile/
-    │       ├── ProfileScreen.tsx
-    │       ├── EditProfileScreen.tsx
-    │       ├── GradeListScreen.tsx
-    │       └── GradeDetailScreen.tsx
-    ├── components/
-    │   ├── common/
-    │   │   ├── ScreenContainer.tsx
-    │   │   ├── OfflineBanner.tsx
-    │   │   ├── LoadingView.tsx
-    │   │   ├── ErrorView.tsx
-    │   │   ├── EmptyState.tsx
-    │   │   ├── SearchBar.tsx
-    │   │   ├── FilterChips.tsx
-    │   │   ├── SyncBadge.tsx
-    │   │   ├── LastUpdatedText.tsx
-    │   │   ├── AppButton.tsx
-    │   │   └── FormInput.tsx
-    │   ├── course/
-    │   │   └── CourseCard.tsx
-    │   ├── schedule/
-    │   │   ├── DaySelector.tsx
-    │   │   └── SessionCard.tsx
-    │   ├── assignment/
-    │   │   ├── AssignmentItem.tsx
-    │   │   └── StatusToggle.tsx
-    │   ├── grade/
-    │   │   ├── GpaSummary.tsx
-    │   │   └── GradeRow.tsx
-    │   └── profile/
-    │       └── InfoRow.tsx
-    ├── theme/
-    │   ├── colors.ts
-    │   ├── spacing.ts
-    │   └── typography.ts
-    └── utils/
-        ├── date.ts               # formatDate, isOverdue, daysLeft
-        ├── gpa.ts                # toScale4, calcGpa có trọng số
-        └── validators.ts
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
+```
+
+*(Hoặc luật phân quyền chặt chẽ theo user):*
+```json
+{
+  "rules": {
+    "users": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null"
+      }
+    },
+    "chats": {
+      "$chatId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+    "userChats": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
 ```
 
 ---
 
-## 5. Hướng dẫn cài đặt và chạy ứng dụng
+## 4. Hướng dẫn chạy ứng dụng
 
-### Bước 1: Khởi động Mock API Server
-Mở một cửa sổ Terminal tại thư mục `ThucHanh4`:
+### 4.1. Cài đặt phụ thuộc
 ```bash
-npm run server
+cd ThucHanh5
+npm install
 ```
-Server sẽ chạy tại địa chỉ `http://0.0.0.0:3000` với độ trễ giả lập 800ms (`--delay 800`).
 
-### Bước 2: Khởi động ứng dụng React Native
-Mở một cửa sổ Terminal thứ hai tại thư mục `ThucHanh4`:
+### 4.2. Khởi chạy Metro Bundler
+```bash
+npm start
+```
+
+### 4.3. Chạy trên thiết bị Android
 ```bash
 npm run android
 ```
 
+### 4.4. Kiểm thử Chat Realtime giữa 2 máy
+1. Mở 2 máy ảo Android (hoặc 1 máy ảo + 1 máy thật).
+2. Thiết bị 1: Đăng nhập tài khoản A (ví dụ: `an.nguyen@example.com` / `123456`).
+3. Thiết bị 2: Đăng ký hoặc đăng nhập tài khoản B (ví dụ: `binh.tran@example.com` / `123456`).
+4. Thiết bị 1 mở Danh bạ -> Thấy tài khoản B có chấm xanh Online -> Bấm vào để Chat.
+5. Gửi tin nhắn từ Thiết bị 1 -> Thiết bị 2 nhận ngay lập tức mà không cần reload.
+6. Thử bấm icon Ghim vị trí (📍) để gửi tin nhắn vị trí GPS.
+
 ---
 
-## 6. Hướng dẫn kiểm thử 7 kịch bản bắt buộc
-
-| # | Kịch bản kiểm thử | Thao tác thực hiện | Kết quả đạt được |
-| :-: | :--- | :--- | :--- |
-| **1** | **Tắt server khi mở app** | Tắt `npm run server` và mở ứng dụng lần đầu (chưa có cache). | Màn hình hiển thị `ErrorView` thông báo lỗi mạng kèm nút *"Thử lại"*. Ứng dụng không bị crash. |
-| **2** | **Cache khi offline** | Bật server, mở app để nạp cache. Bật chế độ máy bay (Airplane Mode) rồi khởi động lại app. | Dữ liệu hiển thị mượt mà từ Cache, có banner *"Bạn đang offline"* và dòng *"Cập nhật lần cuối: HH:mm, dd/MM/yyyy"*. |
-| **3** | **Thao tác offline** | Khi đang bật chế độ máy bay: Đánh dấu xong 2 bài tập, thêm 1 bài tập mới. | Giao diện cập nhật ngay lập tức (Optimistic Update), các mục hiển thị nhãn *"Chưa đồng bộ"*, tab Tổng quan báo số thay đổi chờ đồng bộ. |
-| **4** | **Tự động đồng bộ** | Tắt chế độ máy bay (kết nối mạng trở lại). | Ứng dụng tự động gửi Outbox Queue lên server, nhãn *"Chưa đồng bộ"* biến mất, hiện thông báo *"Đã đồng bộ X thay đổi"*, kiểm tra file `db.json` thấy dữ liệu được cập nhật đúng. |
-| **5** | **Xử lý xung đột** | Khi offline sửa họ tên sinh viên. Đồng thời sửa trực tiếp file `db.json` với `updatedAt` mới hơn. Bật lại mạng. | Hệ thống phát hiện xung đột thời gian, hiển thị cảnh báo và ưu tiên giữ dữ liệu mới trên server. |
-| **6** | **Tìm kiếm / Lọc rỗng** | Gõ tìm kiếm môn học không tồn tại hoặc lọc học kỳ không có điểm. | Hiển thị `EmptyState` thân thiện kèm nút *"Xóa bộ lọc"*. |
-| **7** | **Kéo để làm mới** | Thực hiện thao tác vuốt từ trên xuống (Pull to Refresh) trên danh sách. | Spinner xoay và tải lại dữ liệu mới nhất từ server. |
+## 5. Sản phẩm nộp bài theo yêu cầu
+1. **Mã nguồn dự án**: Nằm trong thư mục `ThucHanh5/` (loại bỏ `node_modules`, `android/build`).
+2. **Ảnh chụp các màn hình**:
+   - `01_DangKy.png`: Màn hình Đăng ký tài khoản mới.
+   - `02_Home_Unread.png`: Màn hình Home hiển thị danh sách hội thoại có badge số tin chưa đọc.
+   - `03_DanhBa_Online.png`: Màn hình Danh bạ hiển thị trạng thái online/offline.
+   - `04_Chat_Thuong_Va_ViTri.png`: Màn hình Chat 1-1 gồm tin nhắn văn bản và tin nhắn vị trí kèm bản đồ.
+3. **Ảnh chụp Firebase Console**:
+   - `05_Firebase_Data.png`: Tab Realtime Database -> Data hiển thị các node `/users`, `/chats`, `/userChats`.
+4. **Video 1-2 phút**: Quay màn hình 2 máy ảo/thiết bị chat qua lại trực tiếp cho thấy tin nhắn hiện tức thì.

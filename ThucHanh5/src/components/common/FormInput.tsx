@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,9 @@ import {
   StyleSheet,
   KeyboardTypeOptions,
   ViewStyle,
+  TouchableOpacity,
 } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import colors from '../../theme/colors';
 import spacing from '../../theme/spacing';
 import typography from '../../theme/typography';
@@ -22,6 +24,10 @@ export interface FormInputProps {
   numberOfLines?: number;
   style?: ViewStyle;
   editable?: boolean;
+  secureTextEntry?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
+  isPassword?: boolean;
 }
 
 export default function FormInput({
@@ -35,54 +41,94 @@ export default function FormInput({
   numberOfLines = 1,
   style,
   editable = true,
+  secureTextEntry = false,
+  autoCapitalize = 'sentences',
+  autoCorrect = true,
+  isPassword = false,
 }: FormInputProps) {
+  const [showPassword, setShowPassword] = useState(!isPassword);
+
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        style={[
-          styles.input,
-          multiline && styles.multilineInput,
-          Boolean(error) && styles.inputError,
-          !editable && styles.inputDisabled,
-        ]}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        multiline={multiline}
-        numberOfLines={numberOfLines}
-        editable={editable}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+      {label ? <Text style={styles.label}>{label}</Text> : null}
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={[
+            styles.input,
+            multiline && styles.multilineInput,
+            Boolean(error) && styles.inputError,
+            !editable && styles.inputDisabled,
+            isPassword && styles.inputWithEye,
+          ]}
+          value={value}
+          onChangeText={onChangeText}
+          keyboardType={keyboardType}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textMuted}
+          multiline={multiline}
+          numberOfLines={numberOfLines}
+          editable={editable}
+          secureTextEntry={isPassword ? !showPassword : secureTextEntry}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+        />
+        {isPassword && (
+          <TouchableOpacity
+            style={styles.eyeBtn}
+            onPress={() => setShowPassword(prev => !prev)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            {showPassword ? (
+              <EyeOff size={20} color={colors.textMuted} />
+            ) : (
+              <Eye size={20} color={colors.textMuted} />
+            )}
+          </TouchableOpacity>
+        )}
+      </View>
+      {Boolean(error) && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.base,
+    marginBottom: spacing.md,
   },
   label: {
-    ...typography.subtitle,
-    color: colors.text,
+    ...typography.bodySmall,
     fontWeight: '600',
+    color: colors.text,
     marginBottom: spacing.xs,
   },
+  inputWrapper: {
+    position: 'relative',
+    justifyContent: 'center',
+  },
   input: {
-    minHeight: 44,
+    ...typography.body,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 10,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    ...typography.body,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
     color: colors.text,
+    minHeight: 46,
+  },
+  inputWithEye: {
+    paddingRight: 46,
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 12,
+    height: 40,
+    width: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   multilineInput: {
-    minHeight: 88,
+    minHeight: 90,
     textAlignVertical: 'top',
     paddingTop: spacing.sm,
   },
@@ -91,13 +137,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.dangerLight,
   },
   inputDisabled: {
-    backgroundColor: colors.border,
-    color: colors.textSecondary,
+    backgroundColor: colors.background,
+    color: colors.textMuted,
   },
   errorText: {
     ...typography.caption,
     color: colors.danger,
     marginTop: 4,
-    fontWeight: '500',
+    marginLeft: 2,
   },
 });

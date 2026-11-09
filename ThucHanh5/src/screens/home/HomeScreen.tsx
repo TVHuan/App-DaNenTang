@@ -1,380 +1,391 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  SafeAreaView,
+  TextInput,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import {
-  User,
-  GraduationCap,
-  Calendar,
-  ClipboardList,
-  ChevronRight,
-  RefreshCw,
-  CloudOff,
-} from 'lucide-react-native';
-
-import ScreenContainer from '../../components/common/ScreenContainer';
-import LoadingView from '../../components/common/LoadingView';
-import ErrorView from '../../components/common/ErrorView';
-import LastUpdatedText from '../../components/common/LastUpdatedText';
-import CourseCard from '../../components/course/CourseCard';
-import AssignmentItem from '../../components/assignment/AssignmentItem';
-import EmptyState from '../../components/common/EmptyState';
-import { useAppData } from '../../context/AppDataContext';
-import { useSync } from '../../context/SyncContext';
-import { ROUTES } from '../../navigation/routes';
+import { Search, MessageSquare, Plus } from 'lucide-react-native';
+import { useAuth } from '../../context/AuthContext';
+import { subscribeUserChats, markChatAsRead } from '../../services/chatService';
+import { ChatConversation } from '../../types';
+import { RootStackParamList, ROUTES } from '../../navigation/routes';
+import UserAvatar from '../../components/common/UserAvatar';
 import colors from '../../theme/colors';
 import spacing from '../../theme/spacing';
 import typography from '../../theme/typography';
+import { formatTime } from '../../utils/date';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function HomeScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
-  const {
-    student,
-    courses,
-    upcomingAssignments,
-    todaySessions,
-    loading,
-    error,
-    lastUpdated,
-    reloadAll,
-    toggleAssignmentStatus,
-  } = useAppData();
-  const { pendingCount, syncing, syncNow } = useSync();
+  const navigation = useNavigation<NavigationProp>();
+  const { currentUser } = useAuth();
 
-  if (loading && !student && courses.length === 0) {
-    return (
-      <ScreenContainer>
-        <LoadingView message="Đang tải dữ liệu tổng quan…" />
-      </ScreenContainer>
-    );
-  }
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  if (error && !student && courses.length === 0) {
-    return (
-      <ScreenContainer>
-        <ErrorView message={error} onRetry={reloadAll} />
-      </ScreenContainer>
-    );
-  }
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+
+    setLoading(true);
+    // Lắng nghe danh sách cuộc trò chuyện realtime
+    const unsubscribe = subscribeUserChats(currentUser.uid, chatList => {
+      setConversations(chatList);
+      setLoading(false);
+    });
+
+    // Cleanup listener khi unmount để không bị hiện lặp hoặc memory leak
+    return () => {
+      unsubscribe();
+    };
+  }, [currentUser?.uid]);
+
+  const handleOpenChat = async (conv: ChatConversation) => {
+    if (!currentUser?.uid) return;
+
+    // Đặt số tin chưa đọc về 0 khi mở cuộc trò chuyện
+    await markChatAsRead(currentUser.uid, conv.otherUser.uid);
+
+    navigation.navigate(ROUTES.CHAT, {
+      receiverId: conv.otherUser.uid,
+      receiverName: conv.otherUser.displayName,
+      receiverAvatar: conv.otherUser.avatar,
+      receiverEmail: conv.otherUser.email,
+    });
+  };
+
+  const filteredConversations = conversations.filter(c =>
+    c.otherUser.displayName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const formatConversationTime = (timestamp: number) => {
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate() &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear();
+
+    if (isToday) {
+      return formatTime(date);
+    }
+    const d = String(date.getDate()).padStart(2, '0');
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    return `${d}/${m}`;
+  };
 
   return (
-    <ScreenContainer scroll refreshing={loading} onRefresh={reloadAll}>
-      {/* 1. Header sinh viên */}
-      <View style={styles.headerCard}>
-        <View style={styles.avatarCircle}>
-          <User size={28} color={colors.primary} />
-        </View>
-        <View style={styles.studentInfo}>
-          <Text style={styles.greeting}>Xin chào,</Text>
-          <Text style={styles.studentName}>
-            {student?.fullName || 'Sinh viên'}
-          </Text>
-          <View style={styles.metaRow}>
-            <Text style={styles.codeBadge}>
-              MSSV: {student?.studentCode || '21110001'}
-            </Text>
-            <Text style={styles.classText}>• {student?.className || 'CNTT-K21A'}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* 2. Banner hàng đợi đồng bộ (nếu có pending changes) */}
-      {pendingCount > 0 ? (
-        <View style={styles.syncCard}>
-          <View style={styles.syncLeft}>
-            <CloudOff size={18} color="#B45309" style={styles.syncIcon} />
-            <Text style={styles.syncText}>
-              Có {pendingCount} thay đổi chưa đồng bộ
-            </Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <UserAvatar
+              name={currentUser?.displayName || 'User'}
+              avatarUri={currentUser?.avatar}
+              size="md"
+              isOnline={true}
+              showStatus={true}
+            />
+            <View style={styles.headerTextWrap}>
+              <Text style={styles.greeting}>Xin chào,</Text>
+              <Text style={styles.userName} numberOfLines={1}>
+                {currentUser?.displayName || 'Người dùng'}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
-            style={styles.syncButton}
-            onPress={() => syncNow()}
-            disabled={syncing}
-            accessibilityRole="button"
-            accessibilityLabel="Đồng bộ ngay"
+            style={styles.newChatBtn}
+            onPress={() => (navigation as any).navigate(ROUTES.CONTACTS_TAB)}
           >
-            {syncing ? (
-              <RefreshCw size={14} color={colors.textInverse} />
-            ) : (
-              <Text style={styles.syncButtonText}>Đồng bộ ngay</Text>
-            )}
+            <Plus size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
-      ) : null}
 
-      {/* Cập nhật lần cuối */}
-      <View style={styles.lastUpdatedContainer}>
-        <LastUpdatedText timestamp={lastUpdated} />
-      </View>
-
-      {/* 3. Lịch học hôm nay */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <Calendar size={18} color={colors.primary} style={styles.sectionIcon} />
-          <Text style={styles.sectionTitle}>Lịch học hôm nay</Text>
-        </View>
-      </View>
-
-      {todaySessions.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>Hôm nay bạn không có lịch học.</Text>
-        </View>
-      ) : (
-        todaySessions.map((session) => (
-          <View key={session.id} style={styles.sessionItem}>
-            <View style={styles.sessionTime}>
-              <Text style={styles.sessionTimeText}>
-                {session.startTime} - {session.endTime}
-              </Text>
-              <Text style={styles.sessionRoom}>{session.room}</Text>
-            </View>
-            <View style={styles.sessionContent}>
-              <Text style={styles.sessionCourse} numberOfLines={1}>
-                {session.course?.name || `Môn học #${session.courseId}`}
-              </Text>
-              {session.note ? (
-                <Text style={styles.sessionNote} numberOfLines={1}>
-                  {session.note}
-                </Text>
-              ) : null}
-            </View>
-          </View>
-        ))
-      )}
-
-      {/* 4. Bài tập đến hạn trong 7 ngày tới */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <ClipboardList size={18} color={colors.warning} style={styles.sectionIcon} />
-          <Text style={styles.sectionTitle}>
-            Bài tập đến hạn (7 ngày tới)
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate(ROUTES.ASSIGNMENTS_TAB)}
-          accessibilityRole="button"
-          accessibilityLabel="Xem tất cả bài tập"
-        >
-          <Text style={styles.seeAllText}>Xem tất cả</Text>
-        </TouchableOpacity>
-      </View>
-
-      {upcomingAssignments.length === 0 ? (
-        <View style={styles.emptyBox}>
-          <Text style={styles.emptyText}>
-            Không có bài tập nào sắp đến hạn trong 7 ngày tới.
-          </Text>
-        </View>
-      ) : (
-        upcomingAssignments.slice(0, 3).map((item) => (
-          <AssignmentItem
-            key={item.id}
-            assignment={item}
-            pending={item._pending}
-            onPress={() =>
-              navigation.navigate(ROUTES.HOME_ASSIGNMENT_DETAIL, { id: item.id })
-            }
-            onToggleStatus={() => toggleAssignmentStatus(item.id)}
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <Search size={18} color={colors.textMuted} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Tìm kiếm cuộc trò chuyện..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
-        ))
-      )}
-
-      {/* 5. Các môn học đang học */}
-      <View style={styles.sectionHeader}>
-        <View style={styles.sectionTitleRow}>
-          <GraduationCap size={18} color={colors.primary} style={styles.sectionIcon} />
-          <Text style={styles.sectionTitle}>Môn đang học</Text>
         </View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate(ROUTES.COURSES_TAB)}
-          accessibilityRole="button"
-          accessibilityLabel="Xem tất cả môn học"
-        >
-          <Text style={styles.seeAllText}>Xem tất cả</Text>
-        </TouchableOpacity>
-      </View>
 
-      {courses.slice(0, 3).map((course) => (
-        <CourseCard
-          key={course.id}
-          course={course}
-          onPress={() =>
-            navigation.navigate(ROUTES.HOME_COURSE_DETAIL, { id: course.id })
+        {/* Conversations List */}
+        <FlatList
+          data={filteredConversations}
+          keyExtractor={item => item.chatId}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => {
+            const hasUnread = item.unreadCount > 0;
+            const isSelf = item.lastMessage.senderId === currentUser?.uid;
+
+            return (
+              <TouchableOpacity
+                style={[styles.convItem, hasUnread && styles.convItemUnread]}
+                onPress={() => handleOpenChat(item)}
+                activeOpacity={0.7}
+              >
+                <UserAvatar
+                  name={item.otherUser.displayName}
+                  avatarUri={item.otherUser.avatar}
+                  size="md"
+                  isOnline={item.otherUser.isOnline}
+                  showStatus={true}
+                />
+
+                <View style={styles.convContent}>
+                  <View style={styles.convHeader}>
+                    <Text
+                      style={[styles.convName, hasUnread && styles.convNameUnread]}
+                      numberOfLines={1}
+                    >
+                      {item.otherUser.displayName}
+                    </Text>
+                    <Text
+                      style={[styles.convTime, hasUnread && styles.convTimeUnread]}
+                    >
+                      {formatConversationTime(item.updatedAt)}
+                    </Text>
+                  </View>
+
+                  <View style={styles.convBottom}>
+                    <Text
+                      style={[styles.convLastMsg, hasUnread && styles.convLastMsgUnread]}
+                      numberOfLines={1}
+                    >
+                      {isSelf ? 'Bạn: ' : ''}
+                      {item.lastMessage.type === 'location'
+                        ? '📍 ' + item.lastMessage.text
+                        : item.lastMessage.text}
+                    </Text>
+
+                    {hasUnread && (
+                      <View style={styles.unreadBadge}>
+                        <Text style={styles.unreadCountText}>
+                          {item.unreadCount > 99 ? '99+' : item.unreadCount}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconBg}>
+                <MessageSquare size={36} color={colors.textMuted} />
+              </View>
+              <Text style={styles.emptyTitle}>Chưa có cuộc trò chuyện nào</Text>
+              <Text style={styles.emptySubtitle}>
+                Vào danh bạ để tìm bạn bè và bắt đầu gửi tin nhắn ngay!
+              </Text>
+              <TouchableOpacity
+                style={styles.goToContactsBtn}
+                onPress={() => (navigation as any).navigate(ROUTES.CONTACTS_TAB)}
+              >
+                <Text style={styles.goToContactsText}>Xem danh bạ</Text>
+              </TouchableOpacity>
+            </View>
           }
         />
-      ))}
-    </ScreenContainer>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerCard: {
+  safeArea: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  container: {
+    flex: 1,
+  },
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     backgroundColor: colors.surface,
-    padding: spacing.base,
-    marginHorizontal: spacing.base,
-    marginTop: spacing.sm,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    elevation: 2,
   },
-  avatarCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primaryLight,
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.base,
+    flex: 1,
   },
-  studentInfo: {
+  headerTextWrap: {
+    marginLeft: spacing.sm + 4,
     flex: 1,
   },
   greeting: {
     ...typography.caption,
-    color: colors.textMuted,
-  },
-  studentName: {
-    ...typography.h2,
-    color: colors.text,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  codeBadge: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  classText: {
-    ...typography.caption,
     color: colors.textSecondary,
-    marginLeft: 4,
   },
-  syncCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.warningLight,
-    paddingHorizontal: spacing.base,
-    paddingVertical: spacing.sm,
-    marginHorizontal: spacing.base,
-    marginTop: spacing.md,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.warning,
-  },
-  syncLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  syncIcon: {
-    marginRight: spacing.sm,
-  },
-  syncText: {
-    ...typography.caption,
-    color: '#92400E',
-    fontWeight: '600',
-  },
-  syncButton: {
-    backgroundColor: '#D97706',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  syncButtonText: {
-    ...typography.caption,
-    color: colors.textInverse,
-    fontWeight: '700',
-  },
-  lastUpdatedContainer: {
-    paddingHorizontal: spacing.base,
-    paddingTop: spacing.sm,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginHorizontal: spacing.base,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
-  },
-  sectionTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  sectionIcon: {
-    marginRight: spacing.sm,
-  },
-  sectionTitle: {
+  userName: {
     ...typography.h3,
     color: colors.text,
+    fontWeight: '700',
   },
-  seeAllText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  emptyBox: {
-    backgroundColor: colors.surface,
-    padding: spacing.base,
-    borderRadius: 12,
-    marginHorizontal: spacing.base,
-    borderWidth: 1,
-    borderColor: colors.border,
+  newChatBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
     alignItems: 'center',
+    elevation: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  emptyText: {
-    ...typography.body,
-    color: colors.textMuted,
-  },
-  sessionItem: {
+  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    padding: spacing.md,
-    marginHorizontal: spacing.base,
-    marginBottom: spacing.sm,
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+    height: 44,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.primary,
   },
-  sessionTime: {
-    width: 100,
+  searchIcon: {
     marginRight: spacing.sm,
   },
-  sessionTimeText: {
+  searchInput: {
+    flex: 1,
+    height: '100%',
+    ...typography.body,
+    color: colors.text,
+  },
+  listContent: {
+    paddingVertical: spacing.sm,
+  },
+  convItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  convItemUnread: {
+    backgroundColor: '#F0F7FF',
+  },
+  convContent: {
+    flex: 1,
+    marginLeft: spacing.md,
+  },
+  convHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  convName: {
+    ...typography.body,
+    fontWeight: '600',
+    color: colors.text,
+    flex: 1,
+    marginRight: spacing.sm,
+  },
+  convNameUnread: {
+    fontWeight: '800',
+    color: colors.primaryDark,
+  },
+  convTime: {
     ...typography.caption,
+    color: colors.textMuted,
+  },
+  convTimeUnread: {
     color: colors.primary,
     fontWeight: '700',
   },
-  sessionRoom: {
-    ...typography.caption,
+  convBottom: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  convLastMsg: {
+    ...typography.bodySmall,
     color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  sessionContent: {
     flex: 1,
+    marginRight: spacing.sm,
   },
-  sessionCourse: {
-    ...typography.bodyBold,
+  convLastMsgUnread: {
     color: colors.text,
+    fontWeight: '700',
   },
-  sessionNote: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontStyle: 'italic',
+  unreadBadge: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+  },
+  unreadCountText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+    paddingTop: 80,
+  },
+  emptyIconBg: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  emptyTitle: {
+    ...typography.h3,
+    color: colors.text,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+  },
+  emptySubtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  goToContactsBtn: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 4,
+    borderRadius: 10,
+  },
+  goToContactsText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    ...typography.bodySmall,
   },
 });
